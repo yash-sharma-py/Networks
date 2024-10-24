@@ -12,6 +12,11 @@ data = {
 }
 
 
+
+@app.route('/', methods=['GET'])
+def root():
+    return "GO TO ROUTE /CODE/{ID}"
+
 @app.route('/code/<code_id>', methods=['GET'])
 def get_code(code_id):
     """Get code snippet by ID."""
