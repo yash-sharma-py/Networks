@@ -291,8 +291,144 @@ print(f"Divisor: {divisor}")
 calculated_crc = calculate_crc(data, divisor)
 print(f"Calculated CRC: {calculated_crc}")
 """
-}
+,
+    "checksum_code": """
+def add(bits, ans, flag):
+    carry = 0
+    for i in range(7, -1, -1):
+        temp = carry + bits[i] + ans[i]
+        if temp == 2:
+            ans[i] = 0
+            carry = 1
+        elif temp == 3:
+            ans[i] = 1
+            carry = 1
+        else:
+            ans[i] = temp
+            carry = 0
+    if carry == 1:
+        global pcar
+        pcar += 1
 
+def ones_complement(bits):
+    return [1 if bit == 0 else 0 for bit in bits]
+
+def input_bits():
+    bits = []
+    for i in range(8):
+        bits.append(int(input(f"Enter bit {i+1} (0 or 1): ")))
+    return bits
+
+def display_bits(bits):
+    print(" ".join(str(bit) for bit in bits))
+
+# Sender's Side
+def sender_side():
+    ans = [0] * 8
+    bit0 = [0, 0, 0, 0, 0, 0, 0, 1]
+    global pcar
+    pcar = 0
+
+    print("Sender's side")
+    bit1 = input_bits()
+    add(bit1, ans, True)
+    bit2 = input_bits()
+    add(bit2, ans, True)
+    bit3 = input_bits()
+    add(bit3, ans, True)
+    bit4 = input_bits()
+    add(bit4, ans, True)
+
+    print("\nFirst 8-bit number:")
+    display_bits(bit1)
+    print("Second 8-bit number:")
+    display_bits(bit2)
+    print("Third 8-bit number:")
+    display_bits(bit3)
+    print("Fourth 8-bit number:")
+    display_bits(bit4)
+
+    print("----------------")
+    display_bits(ans)
+
+    if pcar == 1:
+        add(bit0, ans, True)
+        print("Wrap sum:")
+        display_bits(ans)
+
+    ans = ones_complement(ans)
+    print("After 1's complement:")
+    display_bits(ans)
+
+    return ans
+
+# Receiver's Side
+def receiver_side():
+    ans = [0] * 8
+    bit0 = [0, 0, 0, 0, 0, 0, 0, 1]
+    global pcar
+    pcar = 0
+
+    print("Receiver's side")
+    bit1 = input_bits()
+    add(bit1, ans, True)
+    bit2 = input_bits()
+    add(bit2, ans, True)
+    bit3 = input_bits()
+    add(bit3, ans, True)
+    bit4 = input_bits()
+    add(bit4, ans, True)
+    bit5 = input_bits()  # Received checksum
+    add(bit5, ans, True)
+
+    print("\nFirst 8-bit number:")
+    display_bits(bit1)
+    print("Second 8-bit number:")
+    display_bits(bit2)
+    print("Third 8-bit number:")
+    display_bits(bit3)
+    print("Fourth 8-bit number:")
+    display_bits(bit4)
+    print("Received checksum:")
+    display_bits(bit5)
+
+    print("----------------")
+    display_bits(ans)
+
+    if pcar == 1:
+        add(bit0, ans, False)
+        print("Wrap sum:")
+        display_bits(ans)
+
+    ans = ones_complement(ans)
+    print("After 1's complement:")
+    display_bits(ans)
+
+    # Checking if all bits are 0 (no error)
+    if all(bit == 0 for bit in ans):
+        print("No Error")
+    else:
+        print("Error detected!")
+
+# Main function
+def main():
+    print("1. Sender's side (Generate Checksum)")
+    print("2. Receiver's side (Verify Checksum)")
+    choice = int(input("Enter your choice (1 or 2): "))
+
+    if choice == 1:
+        sender_side()
+    elif choice == 2:
+        receiver_side()
+    else:
+        print("Invalid choice!")
+
+# Execute the program
+if _name_ == "_main_":
+    main()
+
+    """
+}
 
 
 @app.route('/data', methods=['GET'])
@@ -301,3 +437,4 @@ def get_data():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
