@@ -112,7 +112,6 @@ class ShortestPath {
         }
     }
 }
-
 """,
     "crc_code": """
 public class CRC {
@@ -262,179 +261,51 @@ def calculate_crc(data, divisor):
     current_bits = appended_data[:len(divisor)]
 
     # Continue until all bits are processed
-    for i in range(len(divisor), len(appended_data) + 1):
-        if current_bits[0] == '1':  # Perform XOR with divisor if the leading bit is 1
-            current_bits = xor(current_bits, divisor)  # XOR the divisor
-        else:  # Perform XOR with zeros if the leading bit is 0
-            current_bits = xor(current_bits, '0' * len(divisor))
+    for i in range(len(divisor), len(appended_data)):
+        if current_bits[0] == '1':
+            current_bits = xor(current_bits, divisor)  # XOR with the divisor
+        current_bits = current_bits[1:] + appended_data[i]  # Shift left and add next bit
 
-        if i < len(appended_data):
-            current_bits += appended_data[i]  # Bring down the next bit
+    # Final XOR for the last bits
+    if current_bits[0] == '1':
+        current_bits = xor(current_bits, divisor)
 
-        current_bits = current_bits.lstrip('0')  # Remove leading zeros
-
-        # If current_bits is empty, reset it to 0
-        if current_bits == "":
-            current_bits = '0' * len(divisor)
-
-    # The remainder is the CRC code
-    return current_bits
+    return current_bits  # The remainder
 
 # Example usage
-data = "1101011111"  # Binary data to send
-divisor = "10011"    # Divisor (polynomial)
-
-print(f"Data: {data}")
-print(f"Divisor: {divisor}")
-
-# Calculate and print the CRC remainder
-calculated_crc = calculate_crc(data, divisor)
-print(f"Calculated CRC: {calculated_crc}")
-"""
-,
+data = "11010011101100"  # Data
+divisor = "10011"  # Divisor
+remainder = calculate_crc(data, divisor)
+print("CRC Remainder: ", remainder)  # Output the remainder
+""",
     "checksum_code": """
+# Function to calculate checksum
 def add(bits, ans, flag):
-    carry = 0
-    for i in range(7, -1, -1):
-        temp = carry + bits[i] + ans[i]
-        if temp == 2:
-            ans[i] = 0
-            carry = 1
-        elif temp == 3:
-            ans[i] = 1
-            carry = 1
-        else:
-            ans[i] = temp
-            carry = 0
-    if carry == 1:
-        global pcar
-        pcar += 1
+    # Add bits and carry
+    sum = int(bits, 2) + int(ans, 2)
+    if sum >= (1 << len(bits)):  # If overflow
+        sum = sum & ((1 << len(bits)) - 1) + 1  # Add carry
+    return format(sum, '0' + str(len(bits)) + 'b')  # Return checksum in binary
 
-def ones_complement(bits):
-    return [1 if bit == 0 else 0 for bit in bits]
-
-def input_bits():
-    bits = []
-    for i in range(8):
-        bits.append(int(input(f"Enter bit {i+1} (0 or 1): ")))
-    return bits
-
-def display_bits(bits):
-    print(" ".join(str(bit) for bit in bits))
-
-# Sender's Side
-def sender_side():
-    ans = [0] * 8
-    bit0 = [0, 0, 0, 0, 0, 0, 0, 1]
-    global pcar
-    pcar = 0
-
-    print("Sender's side")
-    bit1 = input_bits()
-    add(bit1, ans, True)
-    bit2 = input_bits()
-    add(bit2, ans, True)
-    bit3 = input_bits()
-    add(bit3, ans, True)
-    bit4 = input_bits()
-    add(bit4, ans, True)
-
-    print("\nFirst 8-bit number:")
-    display_bits(bit1)
-    print("Second 8-bit number:")
-    display_bits(bit2)
-    print("Third 8-bit number:")
-    display_bits(bit3)
-    print("Fourth 8-bit number:")
-    display_bits(bit4)
-
-    print("----------------")
-    display_bits(ans)
-
-    if pcar == 1:
-        add(bit0, ans, True)
-        print("Wrap sum:")
-        display_bits(ans)
-
-    ans = ones_complement(ans)
-    print("After 1's complement:")
-    display_bits(ans)
-
-    return ans
-
-# Receiver's Side
-def receiver_side():
-    ans = [0] * 8
-    bit0 = [0, 0, 0, 0, 0, 0, 0, 1]
-    global pcar
-    pcar = 0
-
-    print("Receiver's side")
-    bit1 = input_bits()
-    add(bit1, ans, True)
-    bit2 = input_bits()
-    add(bit2, ans, True)
-    bit3 = input_bits()
-    add(bit3, ans, True)
-    bit4 = input_bits()
-    add(bit4, ans, True)
-    bit5 = input_bits()  # Received checksum
-    add(bit5, ans, True)
-
-    print("\nFirst 8-bit number:")
-    display_bits(bit1)
-    print("Second 8-bit number:")
-    display_bits(bit2)
-    print("Third 8-bit number:")
-    display_bits(bit3)
-    print("Fourth 8-bit number:")
-    display_bits(bit4)
-    print("Received checksum:")
-    display_bits(bit5)
-
-    print("----------------")
-    display_bits(ans)
-
-    if pcar == 1:
-        add(bit0, ans, False)
-        print("Wrap sum:")
-        display_bits(ans)
-
-    ans = ones_complement(ans)
-    print("After 1's complement:")
-    display_bits(ans)
-
-    # Checking if all bits are 0 (no error)
-    if all(bit == 0 for bit in ans):
-        print("No Error")
-    else:
-        print("Error detected!")
-
-# Main function
-def main():
-    print("1. Sender's side (Generate Checksum)")
-    print("2. Receiver's side (Verify Checksum)")
-    choice = int(input("Enter your choice (1 or 2): "))
-
-    if choice == 1:
-        sender_side()
-    elif choice == 2:
-        receiver_side()
-    else:
-        print("Invalid choice!")
-
-# Execute the program
-if _name_ == "_main_":
-    main()
-
-    """
+# Function to create checksum
+def create_checksum(data):
+    # Split data into parts and calculate checksum
+    parts = [data[i:i + 8] for i in range(0, len(data), 8)]
+    checksum = '00000000'  # Initial checksum
+    for part in parts:
+        checksum = add(part, checksum, 0)
+    return checksum  # Return final checksum
+"""
 }
 
-
-@app.route('/data', methods=['GET'])
-def get_data():
-    return jsonify(data)
+@app.route('/code/<code_type>', methods=['GET'])
+def get_code(code_type):
+    """Retrieve a specific code snippet by type."""
+    code = data.get(code_type)
+    if code:
+        return jsonify({"code": code.strip()}), 200
+    else:
+        return jsonify({"error": "Code not found"}), 404
 
 if __name__ == '__main__':
-    app.run(debug=True)
-
+    app.run(port=8083)
